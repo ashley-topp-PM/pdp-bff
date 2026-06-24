@@ -13,7 +13,7 @@
  * - Cache miss returns null
  * - Cache hit returns stored value
  *
- * Implementation complete � all tests passing.
+ * Implementation complete � all tests passing.
  */
 
 // Production module — does not exist yet (RED state)
@@ -118,5 +118,19 @@ describe('ProductCacheService — TTL jitter, get/set semantics', () => {
     const key = cacheService.buildKey('P123456', 'fr-CA');
     expect(key).toContain('P123456');
     expect(key).toContain('fr-CA');
+  });
+});
+
+describe('ProductCacheService — default in-memory store', () => {
+  it('should_work_with_default_in_memory_store_when_no_store_injected', async () => {
+    const svc = new ProductCacheService();
+    const dto = { productId: 'P-DEFAULT' };
+
+    const miss = await svc.get('P-DEFAULT', 'en-US');
+    expect(miss).toBeNull();
+
+    await svc.set('P-DEFAULT', 'en-US', dto);
+    const hit = await svc.get('P-DEFAULT', 'en-US');
+    expect(hit).toStrictEqual(dto);
   });
 });
