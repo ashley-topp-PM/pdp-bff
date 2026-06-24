@@ -18,7 +18,21 @@ class ServiceUnavailableException extends Error {
   }
 }
 
+class BadRequestException extends Error {
+  status = 400;
+  constructor(message: string) {
+    super(message);
+    this.name = 'BadRequestException';
+  }
+}
+
 const DEFAULT_LOCALE = 'en-US';
+const VALID_LOCALES = ['en-US', 'en-CA', 'fr-CA'] as const;
+const PRODUCT_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+function logInfo(message: string, ctx?: object): void {
+  console.log(JSON.stringify({ level: 'INFO', service: 'pdp-bff', component: 'ProductsController', message, ...ctx }));
+}
 
 export class ProductsController {
   constructor(
@@ -28,8 +42,18 @@ export class ProductsController {
   ) {}
 
   async getProduct(productId: string, locale: string = DEFAULT_LOCALE): Promise<unknown> {
+    if (!PRODUCT_ID_PATTERN.test(productId)) {
+      throw new BadRequestException('Invalid productId format');
+    }
+    if (!VALID_LOCALES.includes(locale as typeof VALID_LOCALES[number])) {
+      throw new BadRequestException(`Invalid locale. Allowed: ${VALID_LOCALES.join(', ')}`);
+    }
+
+    logInfo('GET product', { productId, locale });
+
     const cached = await this.cache.get(productId, locale);
     if (cached) {
+      logInfo('Cache hit', { productId, locale });
       return cached;
     }
 

@@ -7,7 +7,7 @@
  * Criteria: AC-01, AC-12, AC-13
  * JIRA: AGNT-1582
  *
- * Implementation complete � all tests passing.
+ * Implementation complete � all tests passing.
  */
 
 // Production modules — do not exist yet (RED state)
@@ -128,6 +128,32 @@ describe('ProductsController — AC-01, AC-12, AC-13', () => {
 
     expect(result).toBeDefined();
     expect(graphService.fetchProduct).toHaveBeenCalledWith('P123456', expect.any(String));
+  });
+
+  // SEC-002: reject invalid productId format
+  it('should_throw_BadRequestException_when_productId_has_invalid_format', async () => {
+    await expect(controller.getProduct('../etc/passwd', 'en-US')).rejects.toMatchObject({
+      status: 400,
+      message: 'Invalid productId format',
+    });
+  });
+
+  // SEC-002: reject invalid locale
+  it('should_throw_BadRequestException_when_locale_is_not_allowed', async () => {
+    await expect(controller.getProduct('P123456', 'zh-CN')).rejects.toMatchObject({
+      status: 400,
+    });
+  });
+
+  // Default locale fallback when no locale param provided
+  it('should_use_default_en_US_locale_when_locale_param_not_provided', async () => {
+    cache.get.mockResolvedValue(null);
+    graphService.fetchProduct.mockResolvedValue(mockRawProduct);
+    mapper.toDto.mockReturnValue(mockPdpDto as never);
+
+    await controller.getProduct('P123456');
+
+    expect(graphService.fetchProduct).toHaveBeenCalledWith('P123456', 'en-US');
   });
 
   // GET /products/:id/reviews route

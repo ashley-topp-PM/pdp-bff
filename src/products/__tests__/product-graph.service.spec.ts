@@ -154,6 +154,23 @@ describe('ProductGraphService — HTTP, Auth, Timeout, Circuit Breaker', () => {
     await expect(service.fetchProduct('P123456', 'en-US')).rejects.toBeDefined();
   });
 
+  // Circuit breaker HALF-OPEN → OPEN when probe fails
+  it('should_transition_from_HALF_OPEN_to_OPEN_when_probe_request_fails', async () => {
+    mockedAxios.post.mockRejectedValue(new Error('upstream error'));
+
+    for (let i = 0; i < service.failureThreshold; i++) {
+      await service.fetchProduct('P123456', 'en-US').catch(() => {});
+    }
+
+    service.forceHalfOpen();
+    expect(service.getCircuitState()).toBe(CircuitState.HALF_OPEN);
+
+    mockedAxios.post.mockRejectedValue(new Error('probe failed'));
+    await service.fetchProduct('P123456', 'en-US').catch(() => {});
+
+    expect(service.getCircuitState()).toBe(CircuitState.OPEN);
+  });
+
   // locale passed through as variable in GraphQL query
   it('should_include_locale_variable_in_graphql_request_body', async () => {
     mockedAxios.post.mockResolvedValue(mockGraphResponse);

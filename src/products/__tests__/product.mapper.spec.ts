@@ -12,7 +12,7 @@
  * - fr-CA locale fallback (when French content is absent, fall back to en-CA then en-US)
  * - Null handling for optional fields (original price, averageRating)
  *
- * Implementation complete � all tests passing.
+ * Implementation complete � all tests passing.
  */
 
 // Production module — does not exist yet (RED state)
@@ -172,6 +172,20 @@ describe('ProductMapper — field mapping, fr-CA fallback, null handling', () =>
     expect(dto.variants[0].type).toBe('shade');
     expect(dto.variants[0].heroImageUrl).toBe('https://cdn.sephora.com/images/shade330.jpg');
     expect(dto.variants[0].inStock).toBe(true);
+  });
+
+  // Non-fr-CA locale with localizedContent that doesn't include the locale → falls back to raw
+  it('should_return_empty_localized_when_locale_not_in_localizedContent_and_not_fr_CA', () => {
+    const productWithMismatch = {
+      ...rawProduct,
+      localizedContent: { 'en-US': { name: 'US Name' } },
+    };
+
+    const dto = mapper.toDto(productWithMismatch, 'en-CA');
+
+    // 'en-CA' not in localizedContent and not 'fr-CA' → falls back to raw.name
+    expect(dto.productName).toBe("Pro Filt'r Foundation");
+    expect(dto.locale).toBe('en-CA');
   });
 
   // Out-of-stock variant mapping
